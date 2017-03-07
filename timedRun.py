@@ -6,6 +6,7 @@ import signal
 import subprocess
 import sys
 import time
+import subprocesses as sps
 
 import envVars
 
@@ -61,15 +62,11 @@ def xpkill(p):
 
 
 def makeEnv(binPath):
-    shellIsDeterministic = '-dm-' in binPath
-    # Total hack to make this not rely on queryBuildConfiguration in the funfuzz repository.
-    # We need this so releng machines (which work off downloaded shells that are in build/dist/js),
-    # do not compile LLVM.
-    if not shellIsDeterministic:
-        return None
-
     env = envVars.envWithPath(os.path.abspath(os.path.dirname(binPath)))
-    env['ASAN_OPTIONS'] = 'exitcode=' + str(ASAN_EXIT_CODE)
+    if 'ASAN_OPTIONS' in env:
+        env['ASAN_OPTIONS'] += ':exitcode=' + str(ASAN_EXIT_CODE)
+    else:
+        env['ASAN_OPTIONS'] = 'exitcode=' + str(ASAN_EXIT_CODE)
     symbolizer_path = envVars.findLlvmBinPath()
     if symbolizer_path is not None:
         env['ASAN_SYMBOLIZER_PATH'] = os.path.join(symbolizer_path, 'llvm-symbolizer')
@@ -162,6 +159,11 @@ def timed_run(commandWithArgs, timeout, logPrefix, inp=None, preexec_fn=None):
         signum = -rc
         msg = 'CRASHED signal %d (%s)' % (signum, getSignalName(signum, "Unknown signal"))
         sta = Status.CRASHED
+
+    if sta == Status.CRASHED:
+        if sps.grabCrashLog(commandWithArgs[0], child.pid, logPrefix, True):
+                with open(logPrefix + "-crash.txt") as f:
+                    auxCrashData = [line.strip() for line in f.readlines()]
 
     if useLogFiles:
         # Am I supposed to do this?

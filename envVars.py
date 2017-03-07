@@ -40,7 +40,7 @@ def findLlvmBinPath():
         # Assumes clang was installed through apt-get. Works with version 3.6.2.
         # Create a symlink at /usr/bin/llvm-symbolizer for: /usr/bin/llvm-symbolizer-3.6
         if os.path.isfile('/usr/bin/llvm-symbolizer'):
-            return ''
+            return '/usr/bin/'
         else:
             print 'WARNING: Please install clang via `apt-get install clang` if using Ubuntu.'
             print 'then create a symlink at /usr/bin/llvm-symbolizer for: /usr/bin/llvm-symbolizer-3.6.'
